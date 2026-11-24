@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#10131c">
+<title>Aman Media Player</title>
+<style>
+:root{--bg:#10131c;--panel:#191f2c;--panel2:#222b3b;--text:#f4f6fb;--muted:#aab4c5;--accent:#8b7cff;--line:#30394b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui,-apple-system,Segoe UI,sans-serif}
+header{position:sticky;top:0;z-index:5;background:#10131cee;backdrop-filter:blur(14px);border-bottom:1px solid var(--line);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:10px;font-size:19px;font-weight:800}.logo{width:38px;height:38px;border-radius:13px;background:linear-gradient(135deg,#8b7cff,#31c5c9);display:grid;place-items:center;font-size:20px}
+button,.filebtn{border:0;border-radius:12px;padding:11px 14px;background:var(--panel2);color:var(--text);font-weight:650;cursor:pointer}
+button.primary,.filebtn.primary{background:var(--accent);color:white}button:focus-visible,.filebtn:focus-visible{outline:3px solid #b9b1ff;outline-offset:2px}
+main{max-width:1100px;margin:auto;padding:22px 16px 100px}.welcome{padding:24px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(130deg,#29234d,#182b3a 75%);margin-bottom:20px}
+.welcome h1{font-size:clamp(25px,5vw,38px);margin:0 0 8px}.welcome p{color:#d2d8e8;margin:0;line-height:1.5}
+.tabs{display:flex;gap:8px;overflow:auto;padding:4px 0 16px}.tab{white-space:nowrap}.tab.active{background:var(--accent)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:16px}
+.panel h2{margin:0 0 14px;font-size:20px}.tools{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+input[type=file]{display:none}.hint{color:var(--muted);font-size:13px;margin-top:10px}
+.media-stage{background:#090b11;border-radius:15px;min-height:210px;display:grid;place-items:center;overflow:hidden;margin-top:14px;padding:8px}
+video,audio{width:100%;max-height:62vh}audio{margin:24px 0}#photo{max-width:100%;max-height:65vh;object-fit:contain;display:none}
+.empty{color:var(--muted);text-align:center;padding:45px 12px}.filelist{display:grid;gap:8px;margin-top:14px}.fileitem{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px;background:var(--panel2);border-radius:12px}.fileitem span{overflow-wrap:anywhere}.fileitem button{padding:8px 10px}
+.eq{display:flex;align-items:end;justify-content:center;gap:7px;height:70px;margin:12px 0}.eq i{width:8px;border-radius:8px;background:linear-gradient(#31c5c9,#8b7cff);height:var(--h);opacity:.85}
+.range{width:100%;accent-color:var(--accent)}.hidden{display:none!important}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:24px}
+@media(min-width:760px){.columns{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}.panel{margin-bottom:0}}
+</style>
+</head>
+<body>
+<header><div class="brand"><div class="logo">▶</div><span>Aman Media Player</span></div><button id="themeBtn" aria-label="थीम बदलें">☀️ Light</button></header>
+<main>
+<section class="welcome"><h1>आपका मीडिया, एक ही जगह।</h1><p>वीडियो देखें, ऑडियो सुनें और तस्वीरें खोलें। अपनी डिवाइस से फाइल चुनें—आपकी फाइलें इसी ब्राउज़र में रहती हैं।</p></section>
+<nav class="tabs" aria-label="मीडिया सेक्शन">
+<button class="tab active" data-tab="video">🎬 Video Player</button><button class="tab" data-tab="audio">🎵 Audio Player</button><button class="tab" data-tab="photo">🖼️ Photo Viewer</button>
+</nav>
+<section id="video" class="panel section">
+<h2>🎬 Video Player</h2><div class="tools"><label class="filebtn primary" for="videoFiles">＋ वीडियो चुनें</label><input id="videoFiles" type="file" accept="video/*" multiple><button id="videoClear">सूची साफ़ करें</button></div>
+<div class="media-stage" id="videoStage"><div class="empty">वीडियो चलाने के लिए अपनी डिवाइस से फाइल चुनें।</div><video id="videoPlayer" controls playsinline class="hidden"></video></div><div id="videoList" class="filelist"></div>
+</section>
+<section id="audio" class="panel section hidden">
+<h2>🎵 Audio Player</h2><div class="tools"><label class="filebtn primary" for="audioFiles">＋ ऑडियो चुनें</label><input id="audioFiles" type="file" accept="audio/*" multiple><button id="audioClear">सूची साफ़ करें</button></div>
+<div class="eq" aria-hidden="true"><i style="--h:24%"></i><i style="--h:58%"></i><i style="--h:88%"></i><i style="--h:45%"></i><i style="--h:72%"></i><i style="--h:35%"></i><i style="--h:95%"></i><i style="--h:52%"></i><i style="--h:30%"></i><i style="--h:68%"></i><i style="--h:42%"></i><i style="--h:80%"></i></div>
+<div class="media-stage"><div class="empty" id="audioEmpty">गाने सुनने के लिए ऑडियो फाइल चुनें।</div><div id="audioNow" class="hidden" style="width:100%;padding:12px"><strong id="audioTitle">कोई गाना नहीं चुना</strong><audio id="audioPlayer" controls></audio></div></div><div id="audioList" class="filelist"></div>
+<p class="hint">Equalizer-style visual display शामिल है। असली ध्वनि प्रभाव डिवाइस और ब्राउज़र पर निर्भर करते हैं।</p>
+</section>
+<section id="photo" class="panel section hidden">
+<h2>🖼️ Photo Viewer</h2><div class="tools"><label class="filebtn primary" for="photoFiles">＋ फोटो चुनें</label><input id="photoFiles" type="file" accept="image/*" multiple><button id="rotatePhoto">↻ Rotate</button><button id="zoomOut">−</button><button id="zoomIn">＋</button><button id="photoClear">सूची साफ़ करें</button></div>
+<div class="media-stage" id="photoStage"><div class="empty" id="photoEmpty">तस्वीर देखने के लिए फोटो चुनें।</div><img id="photoImg" alt="चुनी गई तस्वीर"></div><div id="photoList" class="filelist"></div>
+</section>
+<footer>Aman Media Player · निजी मीडिया फाइलें आपके डिवाइस पर ही खुलती हैं</footer>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+let videoUrls=[],audioUrls=[],photoUrls=[],rotation=0,zoom=1;
+function makeList(files,container,openFn){container.innerHTML='';files.forEach((f,i)=>{const row=document.createElement('div');row.className='fileitem';const name=document.createElement('span');name.textContent=f.name;const b=document.createElement('button');b.textContent='खोलें';b.onclick=()=>openFn(i);row.append(name,b);container.append(row)})}
+function clearUrls(arr){arr.forEach(x=>URL.revokeObjectURL(x.url));arr.length=0}
+function setupMedia(inputId,arr,listId,playerId,emptyId,nowId,titleId){$(inputId).addEventListener('change',e=>{for(const f of e.target.files){arr.push({file:f,url:URL.createObjectURL(f)})}makeList(arr,$(listId),i=>{const item=arr[i];$(playerId).src=item.url;$(playerId).classList.remove('hidden');if(emptyId)$(emptyId).classList.add('hidden');if(nowId)$(nowId).classList.remove('hidden');if(titleId)$(titleId).textContent=item.file.name;$(playerId).load();$(playerId).play().catch(()=>{})});if(arr.length)$(listId).firstChild?.querySelector('button')?.click();e.target.value=''})}
+setupMedia('videoFiles',videoUrls,'videoList','videoPlayer','videoStage');
+setupMedia('audioFiles',audioUrls,'audioList','audioPlayer','audioEmpty','audioNow','audioTitle');
+function clearMedia(arr,listId,playerId,emptyId,nowId){clearUrls(arr);$(listId).innerHTML='';$(playerId).pause();$(playerId).removeAttribute('src');$(playerId).load();$(playerId).classList.add('hidden');if(emptyId)$(emptyId).classList.remove('hidden');if(nowId)$(nowId).classList.add('hidden')}
+$('videoClear').onclick=()=>clearMedia(videoUrls,'videoList','videoPlayer','videoStage');
+$('audioClear').onclick=()=>clearMedia(audioUrls,'audioList','audioPlayer','audioEmpty','audioNow');
+$('photoFiles').addEventListener('change',e=>{for(const f of e.target.files)photoUrls.push({file:f,url:URL.createObjectURL(f)});makeList(photoUrls,$('photoList'),showPhoto);if(photoUrls.length)showPhoto(photoUrls.length-1);e.target.value=''});
+function showPhoto(i){$('photoImg').src=photoUrls[i].url;$('photoImg').style.display='block';$('photoEmpty').classList.add('hidden');rotation=0;zoom=1;applyPhoto()}
+function applyPhoto(){$('photoImg').style.transform=`rotate(${rotation}deg) scale(${zoom})`}
+$('rotatePhoto').onclick=()=>{rotation=(rotation+90)%360;applyPhoto()};$('zoomIn').onclick=()=>{zoom=Math.min(zoom+.15,3);applyPhoto()};$('zoomOut').onclick=()=>{zoom=Math.max(zoom-.15,.4);applyPhoto()};
+$('photoClear').onclick=()=>{clearUrls(photoUrls);$('photoList').innerHTML='';$('photoImg').removeAttribute('src');$('photoImg').style.display='none';$('photoEmpty').classList.remove('hidden');rotation=0;zoom=1};
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.section').forEach(x=>x.classList.toggle('hidden',x.id!==b.dataset.tab))});
+let light=false;$('themeBtn').onclick=()=>{light=!light;document.documentElement.style.setProperty('--bg',light?'#f1f3f9':'#10131c');document.documentElement.style.setProperty('--panel',light?'#ffffff':'#191f2c');document.documentElement.style.setProperty('--panel2',light?'#e7eaf2':'#222b3b');document.documentElement.style.setProperty('--text',light?'#171a24':'#f4f6fb');document.documentElement.style.setProperty('--muted',light?'#596273':'#aab4c5');document.documentElement.style.setProperty('--line',light?'#d8dce6':'#30394b');$('themeBtn').textContent=light?'🌙 Dark':'☀️ Light'};
+window.addEventListener('beforeunload',()=>[videoUrls,audioUrls,photoUrls].forEach(clearUrls));
+</script>
+</body>
+</html>
