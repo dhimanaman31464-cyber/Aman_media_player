@@ -5,18 +5,25 @@ import android.app.Activity
 import android.content.ContentUris
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
+import android.util.Size
 import android.view.Gravity
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import java.util.concurrent.Executors
 
 private data class MediaItem(val name: String, val uri: Uri, val kind: String)
 
@@ -26,6 +33,7 @@ class MainActivity : Activity() {
     private val panel = Color.rgb(24, 34, 27)
     private val muted = Color.rgb(166, 180, 169)
     private val items = mutableListOf<MediaItem>()
+    private val thumbnailExecutor = Executors.newFixedThreadPool(3)
     private var filter = "All"
     private var player: MediaPlayer? = null
     private lateinit var list: LinearLayout
@@ -39,6 +47,9 @@ class MainActivity : Activity() {
         buildScreen()
         if (hasMediaAccess()) loadMedia() else requestMediaAccess()
     }
+
+    private fun rounded(color: Int, radius: Int = 16): GradientDrawable =
+        GradientDrawable().apply { setColor(color); cornerRadius = dp(radius).toFloat() }
 
     private fun permissions(): Array<String> = when {
         Build.VERSION.SDK_INT >= 34 -> arrayOf(
@@ -83,12 +94,14 @@ class MainActivity : Activity() {
             text = "🔥  AMAN MEDIA"
             textSize = 23f
             setTextColor(Color.WHITE)
-            setTypeface(null, android.graphics.Typeface.BOLD)
+            setTypeface(null, Typeface.BOLD)
         }, LinearLayout.LayoutParams(0, -2, 1f))
         header.addView(Button(this).apply {
             text = "Rescan"
+            isAllCaps = false
+            textSize = 12f
             setTextColor(green)
-            setBackgroundColor(Color.TRANSPARENT)
+            background = rounded(panel, 18)
             setOnClickListener { if (hasMediaAccess()) loadMedia() else requestMediaAccess() }
         })
         root.addView(header)
@@ -115,7 +128,7 @@ class MainActivity : Activity() {
         val footer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(14), dp(10), dp(14), dp(10))
-            setBackgroundColor(panel)
+            background = rounded(panel, 18)
         }
         nowPlaying = TextView(this).apply {
             text = "Choose a song to start playing"
@@ -126,8 +139,9 @@ class MainActivity : Activity() {
         footer.addView(nowPlaying)
         playPause = Button(this).apply {
             text = "▶  Play"
+            isAllCaps = false
             setTextColor(Color.BLACK)
-            setBackgroundColor(green)
+            background = rounded(green, 22)
             setOnClickListener {
                 val p = player
                 if (p != null) {
@@ -149,28 +163,23 @@ class MainActivity : Activity() {
                 textSize = 12f
                 isAllCaps = false
                 setTextColor(if (filter == name) Color.BLACK else Color.WHITE)
-                setBackgroundColor(if (filter == name) green else panel)
+                background = rounded(if (filter == name) green else panel, 20)
                 setOnClickListener { filter = name; buildTabs(tabs); renderItems() }
-            }, LinearLayout.LayoutParams(0, dp(44), 1f).apply { marginEnd = dp(4) })
+            }, LinearLayout.LayoutParams(0, dp(44), 1f).apply { marginEnd = dp(5) })
         }
     }
 
     private fun loadMedia() {
         items.clear()
-        query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, "Music", true)
-        query(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, "Videos", true)
-        query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "Photos", false)
+        query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, "Music")
+        query(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, "Videos")
+        query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "Photos")
         renderItems()
     }
 
-    private fun query(uri: Uri, kind: String, hasDuration: Boolean) {
-        val columns = if (hasDuration) arrayOf(
-            MediaStore.MediaColumns._ID, MediaStore.MediaColumns.DISPLAY_NAME,
-            MediaStore.MediaColumns.DATE_ADDED, MediaStore.Video.Media.DURATION
-        ) else arrayOf(
-            MediaStore.MediaColumns._ID, MediaStore.MediaColumns.DISPLAY_NAME,
-            MediaStore.MediaColumns.DATE_ADDED
-        )
+    private fun query(uri: Uri, kind: String) {
+        val columns = arrayOf(MediaStore.MediaColumns._ID, MediaStore.MediaColumns.DISPLAY_NAME,
+            MediaStore.MediaColumns.DATE_ADDED)
         try {
             contentResolver.query(uri, columns, null, null,
                 MediaStore.MediaColumns.DATE_ADDED + " DESC")?.use { c ->
@@ -201,14 +210,16 @@ class MainActivity : Activity() {
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                setPadding(dp(12), dp(12), dp(12), dp(12))
-                setBackgroundColor(panel)
-                addView(TextView(this@MainActivity).apply {
-                    text = when (item.kind) { "Music" -> "♫"; "Videos" -> "▶"; else -> "▧" }
-                    textSize = 25f
-                    setTextColor(green)
-                    gravity = Gravity.CENTER
-                }, LinearLayout.LayoutParams(dp(42), dp(46)))
+                setPadding(dp(10), dp(9), dp(12), dp(9))
+                background = rounded(panel, 15)
+                val thumb = ImageView(this@MainActivity).apply {
+                    scaleType = ImageView.ScaleType.CENTER_CROP
+                    background = rounded(Color.rgb(38, 52, 42), 11)
+                    clipToOutline = true
+                    setImageResource(if (item.kind == "Music") android.R.drawable.ic_media_play else android.R.drawable.ic_menu_gallery)
+                }
+                addView(thumb, LinearLayout.LayoutParams(dp(58), dp(58)).apply { marginEnd = dp(12) })
+                if (item.kind != "Music") loadThumbnail(item, thumb)
                 val details = LinearLayout(this@MainActivity).apply { orientation = LinearLayout.VERTICAL }
                 details.addView(TextView(this@MainActivity).apply {
                     text = item.name
@@ -224,7 +235,23 @@ class MainActivity : Activity() {
                 addView(details, LinearLayout.LayoutParams(0, -2, 1f))
                 setOnClickListener { openItem(item) }
             }
-            list.addView(row, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(7) })
+            list.addView(row, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
+        }
+    }
+
+    private fun loadThumbnail(item: MediaItem, view: ImageView) {
+        thumbnailExecutor.execute {
+            try {
+                val bitmap: Bitmap? = if (Build.VERSION.SDK_INT >= 29) {
+                    contentResolver.loadThumbnail(item.uri, Size(dp(116), dp(116)), null)
+                } else if (item.kind == "Photos") {
+                    @Suppress("DEPRECATION")
+                    MediaStore.Images.Media.getBitmap(contentResolver, item.uri)
+                } else {
+                    null
+                }
+                if (bitmap != null) runOnUiThread { if (!isFinishing) view.setImageBitmap(bitmap) }
+            } catch (_: Exception) { }
         }
     }
 
@@ -261,6 +288,7 @@ class MainActivity : Activity() {
     override fun onDestroy() {
         player?.release()
         player = null
+        thumbnailExecutor.shutdown()
         super.onDestroy()
     }
 
