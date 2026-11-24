@@ -7,12 +7,12 @@
     "build": "esbuild www/media-store.js --bundle --format=esm --outfile=www/media-store.bundle.js"
   },
   "dependencies": {
-    "@capacitor/core": "^7.4.3",
+    "@capacitor/core": "^6.2.1",
     "@odion-cloud/capacitor-mediastore": "latest"
   },
   "devDependencies": {
-    "@capacitor/cli": "^7.4.3",
-    "@capacitor/android": "^7.4.3",
+    "@capacitor/cli": "^6.2.1",
+    "@capacitor/android": "^6.2.1",
     "esbuild": "latest"
   }
 }
